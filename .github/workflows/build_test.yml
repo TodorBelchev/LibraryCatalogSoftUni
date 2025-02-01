@@ -1,4 +1,4 @@
-name: Build and test
+name: Build, test and deploy
 
 on:
   push:
@@ -7,7 +7,7 @@ on:
     branches: [ "main" ]
 
 jobs:
-  build:
+  build_test:
 
     runs-on: ubuntu-latest
 
@@ -23,9 +23,39 @@ jobs:
       run: npm install
     - name: Install Playright
       run: npx playwright install
+    - name: Replace host url
+      run: echo "export default 'http://localhost:3030'" > src/api/host.js
     - name: Start server
       run: npm run server &
     - name: Start FE
       run: npm run start &
     - name: Execute tests
       run: npm run test
+
+  deploy_be:
+    needs: build_test
+
+    runs-on: ubuntu-latest
+
+    steps:
+    - name: Deploy app to render.com
+      uses: actions/checkout@v3
+    - uses: JorgeLNJunior/render-deploy@v1.4.4
+      with:
+        service_id: ${{ secrets.SERVICE_ID }}
+        api_key: ${{ secrets.RENDER_ID }}
+        wait_deploy: true
+
+  deploy_fe:
+    needs: build_test
+
+    runs-on: ubuntu-latest
+
+    steps:
+    - name: Deploy app to render.com
+      uses: actions/checkout@v3
+    - uses: JorgeLNJunior/render-deploy@v1.4.4
+      with:
+        service_id: ${{ secrets.SERVICE_FE_ID }}
+        api_key: ${{ secrets.RENDER_ID }}
+        wait_deploy: true
